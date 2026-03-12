@@ -62,5 +62,74 @@
  *   // => { isValid: false, errors: { name: "...", email: "...", ... } }
  */
 export function validateForm(formData) {
-  // Your code here
+  const errors = {};
+
+  // 1. Name: non-empty trimmed string, 2–50 chars
+  if (
+    typeof formData.name !== "string" ||
+    formData.name.trim().length < 2 ||
+    formData.name.trim().length > 50
+  ) {
+    errors.name = "Name must be 2-50 characters";
+  }
+
+  // 2. Email: string with exactly one "@" and at least one "." after "@"
+  if (typeof formData.email !== "string") {
+    errors.email = "Invalid email format";
+  } else {
+    const atIndex = formData.email.indexOf("@");
+    const atLastIndex = formData.email.lastIndexOf("@");
+    const afterAt = formData.email.slice(atIndex + 1);
+    if (atIndex === -1 || atIndex !== atLastIndex || !afterAt.includes(".")) {
+      errors.email = "Invalid email format";
+    }
+  }
+
+  // 3. Phone: exactly 10 digits, starts with 6/7/8/9
+  if (typeof formData.phone !== "string") {
+    errors.phone = "Invalid Indian phone number";
+  } else {
+    const startsValid = ["6", "7", "8", "9"].includes(formData.phone[0]);
+    const allDigits =
+      formData.phone.length === 10 &&
+      formData.phone.split("").every((ch) => ch >= "0" && ch <= "9");
+    if (!startsValid || !allDigits) {
+      errors.phone = "Invalid Indian phone number";
+    }
+  }
+
+  // 4. Age: integer between 16 and 100 (jugaad: parse string if needed)
+  let age = formData.age;
+  if (typeof age === "string") {
+    age = parseInt(age, 10);
+  }
+  if (isNaN(age) || !Number.isInteger(age) || age < 16 || age > 100) {
+    errors.age = "Age must be an integer between 16 and 100";
+  }
+
+  // 5. Pincode: exactly 6 digits, must not start with "0"
+  if (
+    typeof formData.pincode !== "string" ||
+    formData.pincode.length !== 6 ||
+    formData.pincode[0] === "0" ||
+    !formData.pincode.split("").every((ch) => ch >= "0" && ch <= "9")
+  ) {
+    errors.pincode = "Invalid Indian pincode";
+  }
+
+  // 6. State: optional chaining + nullish coalescing, must be non-empty string
+  const state = formData?.state ?? "";
+  if (typeof state !== "string" || state.trim() === "") {
+    errors.state = "State is required";
+  }
+
+  // 7. agreeTerms: must be truthy
+  if (!Boolean(formData.agreeTerms)) {
+    errors.agreeTerms = "Must agree to terms";
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
 }

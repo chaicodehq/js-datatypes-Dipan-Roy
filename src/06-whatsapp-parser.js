@@ -39,5 +39,40 @@
  *   //      text: "I love this song", wordCount: 4, sentiment: "love" }
  */
 export function parseWhatsAppMessage(message) {
-  // Your code here
+  // Validation: must be a string
+  if (typeof message !== "string") return null;
+
+  // Find " - " separator between timestamp and sender
+  const dashIndex = message.indexOf(" - ");
+  if (dashIndex === -1) return null;
+
+  // Extract date & time from the left side of " - "
+  const dateTime = message.substring(0, dashIndex); // e.g. "25/01/2025, 14:30"
+  const commaIndex = dateTime.indexOf(", ");
+  const date = dateTime.substring(0, commaIndex);
+  const time = dateTime.substring(commaIndex + 2); // skip ", "
+
+  // Everything after " - " is "Sender: message"
+  const afterDash = message.substring(dashIndex + 3); // skip " - "
+
+  // Find first ": " to split sender from message text
+  const colonIndex = afterDash.indexOf(": ");
+  if (colonIndex === -1) return null;
+
+  const sender = afterDash.substring(0, colonIndex);
+  const text = afterDash.substring(colonIndex + 2).trim(); // skip ": "
+
+  // Word count: split by space, filter empty strings
+  const wordCount = text.split(" ").filter((w) => w !== "").length;
+
+  // Sentiment detection (case-insensitive)
+  const lower = text.toLowerCase();
+  const isFunny =
+    text.includes("😂") || text.includes(":)") || lower.includes("haha");
+  const isLove =
+    text.includes("❤") || lower.includes("love") || lower.includes("pyaar");
+
+  const sentiment = isFunny ? "funny" : isLove ? "love" : "neutral";
+
+  return { date, time, sender, text, wordCount, sentiment };
 }

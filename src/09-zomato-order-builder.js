@@ -46,5 +46,63 @@
  *   // grandTotal: 1000 + 0 + 50 - 150 = 900
  */
 export function buildZomatoOrder(cart, coupon) {
-  // Your code here
+  // Validate cart
+  if (!Array.isArray(cart) || cart.length === 0) return null;
+
+  // Build item breakdown, skipping qty <= 0
+  const items = cart
+    .filter((item) => item.qty > 0)
+    .map((item) => {
+      const addonTotal = (item.addons || []).reduce((sum, addon) => {
+        const price = parseFloat(addon.split(":")[1]) || 0;
+        return sum + price;
+      }, 0);
+      const itemTotal = (item.price + addonTotal) * item.qty;
+      return {
+        name: item.name,
+        qty: item.qty,
+        basePrice: item.price,
+        addonTotal,
+        itemTotal,
+      };
+    });
+
+  const subtotal = items.reduce((sum, item) => sum + item.itemTotal, 0);
+
+  // Delivery fee
+  let deliveryFee;
+  if (subtotal >= 1000) deliveryFee = 0;
+  else if (subtotal >= 500) deliveryFee = 15;
+  else deliveryFee = 30;
+
+  // GST: 5% of subtotal
+  const gst = parseFloat((subtotal * 0.05).toFixed(2));
+
+  // Discount based on coupon
+  let discount = 0;
+  const code = coupon ? coupon.toUpperCase().trim() : "";
+  const originalDeliveryFee = deliveryFee; // preserve for grandTotal
+
+  if (code === "FIRST50") {
+    discount = Math.min(subtotal * 0.5, 150);
+  } else if (code === "FLAT100") {
+    discount = 100;
+  } else if (code === "FREESHIP") {
+    discount = deliveryFee;
+    deliveryFee = 0; // output shows 0, but originalDeliveryFee used in grandTotal
+  }
+
+  // grandTotal uses originalDeliveryFee so FREESHIP discount doesn't double-subtract
+  const grandTotal = parseFloat(
+    Math.max(0, subtotal + originalDeliveryFee + gst - discount).toFixed(2),
+  );
+
+  return {
+    items,
+    subtotal,
+    deliveryFee, // 0 when FREESHIP applied
+    gst,
+    discount,
+    grandTotal,
+  };
 }
